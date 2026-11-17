@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نرد المغامرات | اكتشف لعبتك القادمة!</title>
+    <!-- تحميل Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- تحميل خط Cairo و Tajawal للغة العربية من Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- مكتبة القصاصات الورقية للاحتفال -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- أيقونات FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* إعدادات الخطوط والخلفية العامة */
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, #1e1b4b 0%, #311042 50%, #4c1d95 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: #ffffff;
+        }
+
+        h1, h2, h3, .font-cairo {
+            font-family: 'Cairo', sans-serif;
+        }
+
+        /* خلفية متحركة بأشكال هندسية ناعمة */
+        .bg-shapes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.4;
+            animation: floatShape 15s infinite alternate ease-in-out;
+        }
+
+        .shape-1 {
+            width: 300px;
+            height: 300px;
+            background: #ec4899;
+            top: -50px;
+            right: -50px;
+        }
+
+        .shape-2 {
+            width: 350px;
+            height: 350px;
+            background: #06b6d4;
+            bottom: -100px;
+            left: -50px;
+            animation-delay: -5s;
+        }
+
+        .shape-3 {
+            width: 250px;
+            height: 250px;
+            background: #f59e0b;
+            top: 40%;
+            left: 30%;
+            animation-delay: -10s;
+        }
+
+        @keyframes floatShape {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 40px) scale(1.15); }
+        }
+
+        /* ==========================================
+           تصميم حجر النرد ثلاثي الأبعاد (3D Cube)
+           ========================================== */
+        .scene {
+            width: 150px;
+            height: 150px;
+            perspective: 800px;
+            margin: 0 auto;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.3s ease;
+        }
+
+        .scene:hover {
+            transform: scale(1.06);
+        }
+
+        .scene:active {
+            transform: scale(0.95);
+        }
+
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1.6s cubic-bezier(0.17, 0.89, 0.32, 1.15);
+            transform: translateZ(-75px) rotateX(-20deg) rotateY(25deg);
+        }
+
+        /* حركة اهتزاز خفيفة لجذب الانتباه قبل الرمي */
+        .cube-idle {
+            animation: idleFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes idleFloat {
+            0%, 100% { transform: translateZ(-75px) rotateX(-20deg) rotateY(25deg) translateY(0); }
+            50% { transform: translateZ(-75px) rotateX(-15deg) rotateY(35deg) translateY(-10px); }
+        }
+
+        .cube__face {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 26px;
+            background: linear-gradient(145deg, #ffffff, #f1f5f9);
+            border: 4px solid #e2e8f0;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.12), 0 10px 25px rgba(0, 0, 0, 0.3);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 18px;
+            box-sizing: border-box;
+            backface-visibility: hidden;
+        }
+
+        /* مواقع أوجه المكعب الستة */
+        .cube__face--1 { transform: rotateY(0deg) translateZ(75px); }
+        .cube__face--2 { transform: rotateY(90deg) translateZ(75px); }
+        .cube__face--3 { transform: rotateY(180deg) translateZ(75px); }
+        .cube__face--4 { transform: rotateY(-90deg) translateZ(75px); }
+        .cube__face--5 { transform: rotateX(90deg) translateZ(75px); }
+        .cube__face--6 { transform: rotateX(-90deg) translateZ(75px); background: linear-gradient(145deg, #fef3c7, #fde68a); }
+
+        /* نقاط النرد (Pips) */
+        .pip {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #4f46e5, #1e1b4b);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 1px 2px rgba(255,255,255,0.8);
+            align-self: center;
+            justify-self: center;
+        }
+
+        .pip.red {
+            background: radial-gradient(circle at 30% 30%, #f43f5e, #be123c);
+            width: 32px;
+            height: 32px;
+        }
+
+        .pip.gold {
+            background: radial-gradient(circle at 30% 30%, #f59e0b, #b45309);
+        }
+
+        /* توزيع النقاط على كل وجه */
+        /* الوجه 1 */
+        .cube__face--1 .pip:nth-child(1) { grid-area: 2 / 2; }
+
+        /* الوجه 2 */
+        .cube__face--2 .pip:nth-child(1) { grid-area: 1 / 1; }
+        .cube__face--2 .pip:nth-child(2) { grid-area: 3 / 3; }
+
+        /* الوجه 3 */
+        .cube__face--3 .pip:nth-child(1) { grid-area: 1 / 1; }
+        .cube__face--3 .pip:nth-child(2) { grid-area: 2 / 2; }
+        .cube__face--3 .pip:nth-child(3) { grid-area: 3 / 3; }
+
+        /* الوجه 4 */
+        .cube__face--4 .pip:nth-child(1) { grid-area: 1 / 1; }
+        .cube__face--4 .pip:nth-child(2) { grid-area: 1 / 3; }
+        .cube__face--4 .pip:nth-child(3) { grid-area: 3 / 1; }
+        .cube__face--4 .pip:nth-child(4) { grid-area: 3 / 3; }
+
+        /* الوجه 5 */
+        .cube__face--5 .pip:nth-child(1) { grid-area: 1 / 1; }
+        .cube__face--5 .pip:nth-child(2) { grid-area: 1 / 3; }
+        .cube__face--5 .pip:nth-child(3) { grid-area: 2 / 2; }
+        .cube__face--5 .pip:nth-child(4) { grid-area: 3 / 1; }
+        .cube__face--5 .pip:nth-child(5) { grid-area: 3 / 3; }
+
+        /* الوجه 6 (نجمة كوجه جمالي) */
+        .cube__face--6 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* تأثيرات البطاقة المنبثقة (Modal) */
+        @keyframes modalPop {
+            0% { opacity: 0; transform: scale(0.7) translateY(30px); }
+            70% { transform: scale(1.03) translateY(-5px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .animate-modal-pop {
+            animation: modalPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* زر رمي النرد بتدرج نابض */
+        .btn-glow {
+            background: linear-gradient(90deg, #f59e0b, #ec4899, #8b5cf6);
+            background-size: 200% 200%;
+            animation: gradientShift 4s ease infinite;
+            box-shadow: 0 10px 25px -5px rgba(236, 72, 153, 0.5);
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* بطاقات القائمة السفلية */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.14);
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.35);
+        }
+
+        .glass-card.active-highlight {
+            background: rgba(255, 255, 255, 0.22);
+            border-color: #fbbf24;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+            transform: scale(1.03);
+        }
+    </style>
+</head>
+<body class="relative flex flex-col justify-between selection:bg-pink-500 selection:text-white">
+
+    <!-- خلفية الأشكال المتوهجة -->
+    <div class="bg-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <!-- الشريط العلوي (Header) -->
+    <header class="relative z-10 w-full max-w-5xl mx-auto px-4 pt-6 pb-2 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-400 to-pink-500 flex items-center justify-center shadow-lg transform -rotate-6">
+                <i class="fa-solid fa-dice text-white text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-l from-amber-200 via-white to-pink-200">
+                    نرد المغامرات
+                </h1>
+                <p class="text-xs sm:text-sm text-indigo-200">ارمِ النرد واكتشف وجهتك الممتعة!</p>
+            </div>
+        </div>
+
+        <!-- زر كتم/تشغيل الصوت -->
+        <button id="soundToggleBtn" onclick="toggleSound()" aria-label="تبديل الصوت"
+            class="glass-card px-3.5 py-2.5 rounded-2xl flex items-center gap-2 text-sm font-bold text-white hover:text-amber-300 cursor-pointer">
+            <i id="soundIcon" class="fa-solid fa-volume-high text-amber-400 text-lg"></i>
+            <span class="hidden sm:inline" id="soundText">الصوت مفعل</span>
+        </button>
+    </header>
+
+    <!-- القسم الرئيسي التفاعلي -->
+    <main class="relative z-10 flex-grow flex flex-col items-center justify-center px-4 py-6 max-w-5xl mx-auto w-full">
+
+        <!-- منطقة النرد -->
+        <div class="flex flex-col items-center justify-center my-4 sm:my-6">
+            <div class="relative p-8 sm:p-10 rounded-full bg-white/5 border border-white/10 shadow-2xl backdrop-blur-sm">
+                <!-- حلقة توهج خلف النرد -->
+                <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-pink-500/20 to-amber-400/20 blur-xl -z-10"></div>
+                
+                <!-- مجسم النرد ثلاثي الأبعاد -->
+                <div class="scene" id="diceScene" onclick="rollDice()" title="اضغط لرمي النرد!">
+                    <div class="cube cube-idle" id="diceCube">
+                        <!-- الوجه 1 -->
+                        <div class="cube__face cube__face--1">
+                            <span class="pip red"></span>
+                        </div>
+                        <!-- الوجه 2 -->
+                        <div class="cube__face cube__face--2">
+                            <span class="pip"></span>
+                            <span class="pip"></span>
+                        </div>
+                        <!-- الوجه 3 -->
+                        <div class="cube__face cube__face--3">
+                            <span class="pip"></span>
+                            <span class="pip"></span>
+                            <span class="pip"></span>
+                        </div>
+                        <!-- الوجه 4 -->
+                        <div class="cube__face cube__face--4">
+                            <span class="pip"></span>
+                            <span class="pip"></span>
+                            <span class="pip"></span>
+                            <span class="pip"></span>
+                        </div>
+                        <!-- الوجه 5 -->
+                        <div class="cube__face cube__face--5">
+                            <span class="pip gold"></span>
+                            <span class="pip gold"></span>
+                            <span class="pip red"></span>
+                            <span class="pip gold"></span>
+                            <span class="pip gold"></span>
+                        </div>
+                        <!-- الوجه 6 (وجه جمالي فقط، النتيجة دائماً من 1 إلى 5) -->
+                        <div class="cube__face cube__face--6">
+                            <i class="fa-solid fa-star text-5xl text-amber-500 drop-shadow"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- نص إرشادي وزر الرمي -->
+            <p id="statusHint" class="mt-5 text-indigo-200 text-sm sm:text-base font-medium animate-pulse">
+                👆 اضغط على حجر النرد أو الزر بالأسفل (الأرقام من 1 إلى 5)
+            </p>
+
+            <button id="rollBtn" onclick="rollDice()"
+                class="mt-4 btn-glow text-white font-cairo font-extrabold text-lg sm:text-xl px-10 py-4 rounded-2xl transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-3 cursor-pointer">
+                <i class="fa-solid fa-dice-d20 text-2xl"></i>
+                <span>ارمِ النرد الآن!</span>
+            </button>
+        </div>
+
+        <!-- دليل الأرقام والألعاب الخمسة -->
+        <section class="w-full mt-6 sm:mt-8">
+            <div class="flex items-center justify-between mb-4 px-1">
+                <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-list-ol text-amber-400"></i>
+                    <span>قائمة المشاريع والألعاب (1 - 5)</span>
+                </h2>
+                <span class="text-xs text-indigo-300 bg-white/10 px-3 py-1 rounded-full">5 مشاريع مميزة</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4" id="optionsGrid">
+                <!-- يتم تعبئة البطاقات تلقائياً بواسطة JavaScript لضمان التطابق التام -->
+            </div>
+        </section>
+    </main>
+
+    <!-- التذييل (Footer) -->
+    <footer class="relative z-10 text-center py-4 text-xs sm:text-sm text-indigo-300/80">
+        صُنع بكل حب ومتعة ✨ نرد المغامرات التفاعلي
+    </footer>
+
+    <!-- ==========================================
+         البطاقة المنبثقة للاحتفال بالنتيجة (Modal)
+         ========================================== -->
+    <div id="resultModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-opacity">
+        <div id="modalCard" class="relative w-full max-w-md rounded-3xl p-6 sm:p-8 text-center shadow-2xl border-2 border-white/25 bg-gradient-to-b from-indigo-900 via-purple-900 to-slate-900 animate-modal-pop">
+            
+            <!-- زر الإغلاق العلوي -->
+            <button onclick="closeModal()" aria-label="إغلاق"
+                class="absolute top-4 left-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition cursor-pointer">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <!-- شارة الرقم الظاهر على النرد -->
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 font-bold text-sm mb-4">
+                <i class="fa-solid fa-dice"></i>
+                <span>ظهر لك الرقم: <strong id="modalDiceNumber" class="text-lg text-white">1</strong></span>
+            </div>
+
+            <!-- أيقونة اللعبة / التطبيق -->
+            <div id="modalIconWrapper" class="w-24 h-24 mx-auto rounded-3xl flex items-center justify-center text-5xl shadow-xl mb-5 transform transition-transform hover:rotate-6">
+                <i id="modalIcon" class="fa-solid fa-gem text-white"></i>
+            </div>
+
+            <!-- اسم صاحب المشروع / اللعبة -->
+            <p id="modalSubtitle" class="text-sm sm:text-base font-bold text-pink-300 mb-1">
+                لعبة زينة
+            </p>
+
+            <!-- العنوان الرئيسي للعبة -->
+            <h3 id="modalTitle" class="text-2xl sm:text-3xl font-black text-white mb-3 leading-snug">
+                Magic Jewel Hunt
+            </h3>
+
+            <!-- الوصف المشجع -->
+            <p id="modalDesc" class="text-indigo-100 text-sm sm:text-base leading-relaxed bg-white/5 rounded-2xl p-4 border border-white/10 mb-6">
+                رحلة سحرية للبحث عن الجواهر النادرة!
+            </p>
+
+            <!-- أزرار التحكم داخل النافذة -->
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button onclick="playAgain()"
+                    class="w-full btn-glow text-white font-cairo font-bold text-base sm:text-lg py-3.5 px-6 rounded-2xl shadow-lg flex items-center justify-center gap-2 cursor-pointer transition transform hover:scale-105 active:scale-95">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>العب مرة أخرى</span>
+                </button>
+                <button onclick="closeModal()"
+                    class="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white font-bold py-3.5 px-5 rounded-2xl transition cursor-pointer">
+                    إغلاق
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         الكود البرمجي (JavaScript + Web Audio API)
+         ========================================== -->
+    <script>
+        // بيانات الألعاب والمشاريع الـ 5 المنفصلة
+        const gameOptions = [
+            {
+                number: 1,
+                owner: "لعبة زينة",
+                title: "Magic Jewel Hunt",
+                description: "رحلة سحرية للبحث عن الجواهر النادرة وحل الألغاز المشوقة!",
+                icon: "fa-gem",
+                gradient: "from-cyan-400 to-blue-600",
+                badgeColor: "text-cyan-300",
+                cardAccent: "border-cyan-400/40"
+            },
+            {
+                number: 2,
+                owner: "لعبة نتالي",
+                title: "Sweet Escape",
+                description: "مغامرة لذيذة وممتعة في عالم الحلويات الملونة والمفاجآت!",
+                icon: "fa-cake-candles",
+                gradient: "from-pink-400 to-rose-600",
+                badgeColor: "text-pink-300",
+                cardAccent: "border-pink-400/40"
+            },
+            {
+                number: 3,
+                owner: "تطبيق لين",
+                title: "المواقع السياحية",
+                description: "دليلك الشامل لاكتشاف أجمل المعالم والأماكن السياحية الساحرة!",
+                icon: "fa-map-location-dot",
+                gradient: "from-emerald-400 to-teal-600",
+                badgeColor: "text-emerald-300",
+                cardAccent: "border-emerald-400/40"
+            },
+            {
+                number: 4,
+                owner: "تطبيق راما",
+                title: "Jordan Explorer",
+                description: "استكشف روائع الأردن وتاريخه العريق ومعالمه السياحية المذهلة!",
+                icon: "fa-compass",
+                gradient: "from-amber-400 to-orange-600",
+                badgeColor: "text-amber-300",
+                cardAccent: "border-amber-400/40"
+            },
+            {
+                number: 5,
+                owner: "موقع راية",
+                title: "منارة الطالبات",
+                description: "منصتك التعليمية المضيئة نحو التميز والنجاح والإبداع الدراسي!",
+                icon: "fa-book-open-reader",
+                gradient: "from-violet-400 to-purple-600",
+                badgeColor: "text-violet-300",
+                cardAccent: "border-violet-400/40"
+            }
+        ];
+
+        // متغيرات الحالة
+        let isRolling = false;
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        // تهيئة القائمة السفلية عند تحميل الصفحة
+        function renderOptionsList() {
+            const grid = document.getElementById('optionsGrid');
+            grid.innerHTML = gameOptions.map(item => `
+                <div id="option-card-${item.number}" class="glass-card rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center font-cairo font-black text-base text-amber-300 border border-white/20">
+                            ${item.number}
+                        </span>
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-md">
+                            <i class="fa-solid ${item.icon} text-white text-lg"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold ${item.badgeColor} mb-0.5">${item.owner}</p>
+                        <h3 class="font-cairo font-bold text-sm sm:text-base text-white leading-snug">${item.title}</h3>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ==========================================
+        // نظام المؤثرات الصوتية (Web Audio API)
+        // ==========================================
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            const text = document.getElementById('soundText');
+            if (soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-amber-400 text-lg';
+                text.textContent = 'الصوت مفعل';
+                initAudio();
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-400 text-lg';
+                text.textContent = 'الصوت مكتوم';
+            }
+        }
+
+        // صوت نقرة دحرجة النرد
+        function playDiceTickSound() {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                // تردد عشوائي خفيف لمحاكاة اصطدام النرد بالسطح
+                osc.frequency.setValueAtTime(180 + Math.random() * 140, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.06);
+
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.06);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.065);
+            } catch (e) {
+                // تجاهل أخطاء الصوت في حال عدم تفاعل المستخدم بعد
+            }
+        }
+
+        // صوت الاحتفال والفوز
+        function playWinFanfare() {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, index) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    const startTime = audioCtx.currentTime + index * 0.1;
+                    osc.frequency.setValueAtTime(freq, startTime);
+
+                    gain.gain.setValueAtTime(0.001, startTime);
+                    gain.gain.linearRampToValueAtTime(0.25, startTime + 0.03);
+                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.45);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(startTime);
+                    osc.stop(startTime + 0.46);
+                });
+            } catch (e) {}
+        }
+
+        // ==========================================
+        // منطق رمي النرد ثلاثي الأبعاد (1 إلى 5)
+        // ==========================================
+        function getTargetRotation(number) {
+            // زوايا الدوران الأساسية لإظهار كل وجه في المقدمة
+            const baseRotations = {
+                1: { x: 0, y: 0 },
+                2: { x: 0, y: -90 },
+                3: { x: 0, y: -180 },
+                4: { x: 0, y: 90 },
+                5: { x: -90, y: 0 }
+            };
+
+            const target = baseRotations[number];
+            // إضافة دورات كاملة عشوائية (720 أو 1080 درجة) لجعل الحركة مشوقة
+            const extraSpinsX = (Math.floor(Math.random() * 2) + 2) * 360;
+            const extraSpinsY = (Math.floor(Math.random() * 2) + 2) * 360;
+
+            return {
+                x: target.x + extraSpinsX,
+                y: target.y + extraSpinsY
+            };
+        }
+
+        function rollDice() {
+            if (isRolling) return;
+            isRolling = true;
+
+            initAudio();
+
+            // إزالة التمييز السابق من البطاقات
+            document.querySelectorAll('.glass-card').forEach(el => el.classList.remove('active-highlight'));
+
+            const cube = document.getElementById('diceCube');
+            const rollBtn = document.getElementById('rollBtn');
+            const statusHint = document.getElementById('statusHint');
+
+            // تعطيل الزر مؤقتاً أثناء الدوران
+            cube.classList.remove('cube-idle');
+            rollBtn.disabled = true;
+            rollBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            statusHint.textContent = '🎲 جاري رمي النرد... ترقب النتيجة!';
+
+            // توليد رقم عشوائي صحيح من 1 إلى 5 فقط
+            const resultNumber = Math.floor(Math.random() * 5) + 1;
+            const rotation = getTargetRotation(resultNumber);
+
+            // تطبيق التحويل ثلاثي الأبعاد
+            cube.style.transform = `translateZ(-75px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`;
+
+            // تشغيل أصوات الدحرجة المتتالية أثناء الحركة
+            let tickCount = 0;
+            const tickInterval = setInterval(() => {
+                playDiceTickSound();
+                tickCount++;
+                if (tickCount >= 10) clearInterval(tickInterval);
+            }, 130);
+
+            // بعد انتهاء مدة حركة النرد (1.65 ثانية)
+            setTimeout(() => {
+                clearInterval(tickInterval);
+                isRolling = false;
+                rollBtn.disabled = false;
+                rollBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                statusHint.textContent = `✨ ظهر الرقم ${resultNumber}! اضغط للرمي مجدداً`;
+
+                // تمييز البطاقة المطابقة في القائمة السفلية
+                const activeCard = document.getElementById(`option-card-${resultNumber}`);
+                if (activeCard) {
+                    activeCard.classList.add('active-highlight');
+                }
+
+                // تشغيل صوت الفوز والقصاصات الورقية وعرض البطاقة المنبثقة
+                playWinFanfare();
+                triggerCelebrationConfetti();
+                showResultModal(resultNumber);
+            }, 1650);
+        }
+
+        // إطلاق القصاصات الورقية (Confetti)
+        function triggerCelebrationConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 85,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#fbbf24', '#ec4899', '#38bdf8', '#a855f7', '#34d399']
+                });
+            }
+        }
+
+        // عرض النافذة المنبثقة بالنتيجة
+        function showResultModal(number) {
+            const selected = gameOptions.find(opt => opt.number === number);
+            if (!selected) return;
+
+            document.getElementById('modalDiceNumber').textContent = selected.number;
+            document.getElementById('modalSubtitle').textContent = selected.owner;
+            document.getElementById('modalTitle').textContent = selected.title;
+            document.getElementById('modalDesc').textContent = selected.description;
+
+            const iconWrapper = document.getElementById('modalIconWrapper');
+            iconWrapper.className = `w-24 h-24 mx-auto rounded-3xl flex items-center justify-center text-5xl shadow-xl mb-5 bg-gradient-to-br ${selected.gradient}`;
+
+            const iconEl = document.getElementById('modalIcon');
+            iconEl.className = `fa-solid ${selected.icon} text-white drop-shadow-md`;
+
+            const modal = document.getElementById('resultModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // إغلاق النافذة المنبثقة
+        function closeModal() {
+            const modal = document.getElementById('resultModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // زر "العب مرة أخرى" من داخل النافذة المنبثقة
+        function playAgain() {
+            closeModal();
+            setTimeout(() => {
+                rollDice();
+            }, 200);
+        }
+
+        // إغلاق النافذة عند الضغط خارج البطاقة
+        document.getElementById('resultModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // تشغيل التهيئة عند تحميل الصفحة
+        window.onload = function () {
+            renderOptionsList();
+        };
+    </script>
+</body>
+</html>
